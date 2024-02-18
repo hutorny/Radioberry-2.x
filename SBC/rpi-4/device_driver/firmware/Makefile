@@ -46,5 +46,5 @@ clean:
 	-rm -f $(PROGRAM)
 	
 install: $(PROGRAM)
-	$(INSTALL) $(PROGRAM) $(DESTDIR)/usr/local/bin
+	$(INSTALL) $(PROGRAM) $(DESTDIR)/bin
 
