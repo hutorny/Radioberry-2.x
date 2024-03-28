@@ -63,8 +63,10 @@ For more information, please refer to <http://unlicense.org/>
 #include <unistd.h>
 
 int main(int argc, char **argv)
-{	
+{
+/*
 	printIntroScreen();
+*/
 	if (initRadioberry() < 0){
 		fprintf(stderr,"Radioberry; could not be initialized. \n");
 		exit(-1);
@@ -190,8 +192,9 @@ static int initRadioberry(void) {
 	listen(sock_TCP_Server, 1024);
 	int flags = fcntl(sock_TCP_Server, F_GETFL, 0);
     fcntl(sock_TCP_Server, F_SETFL, flags | O_NONBLOCK);
-	
+/*
 	start_rb_register_thread();
+*/
 	return 0;
 }
 
@@ -259,7 +262,7 @@ static void handlePacket(char* buffer){
 	switch (code)
 	{
 		default:
-			fprintf(stderr, "Received packages not for me! \n");
+			fprintf(stderr, "Received packages not for me! code=%x\n", code);
 			break;
 		case 0x0002feef:
 			fprintf(stderr, "Discovery packet received \n");
@@ -412,7 +415,6 @@ static void fillPacketToSend(void) {
 		hpsdrdata[6] = ((last_sequence_number >> 8) & 0xFF);
 		hpsdrdata[7] = (last_sequence_number & 0xFF);
 		last_sequence_number++;
-		
 		memcpy(hpsdrdata + 8, sync_hpsdrdata, 8);
 		memcpy(hpsdrdata + 520, sync_hpsdrdata, 8);
 		
