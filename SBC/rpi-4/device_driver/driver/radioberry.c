@@ -86,7 +86,7 @@ static irq_handler_t radioberry_irq_handler(unsigned int irq, void *dev_id, stru
     return (irq_handler_t) IRQ_HANDLED;      
 }
 
-static void firmware_load(char *firmware, int size) {
+static void firmware_load(const u8 *firmware, int size) {
 	printk(KERN_INFO "inside %s function \n", __FUNCTION__);
 	
 	u8 *buf = kmalloc(size + 1, GFP_KERNEL);
@@ -150,7 +150,7 @@ static int radioberry_open(struct inode *inode, struct file *filep) {
 		  return -EBUSY;
 	}	
 	int *minor = (int *)kmalloc(sizeof(int), GFP_KERNEL);
-	int major = MAJOR(inode->i_rdev);
+	//int major = MAJOR(inode->i_rdev);
 	*minor = MINOR(inode->i_rdev);
 	filep->private_data = (void *)minor;
 	
@@ -231,7 +231,7 @@ static struct file_operations radioberry_fops = {
 static int radioberry_probe(struct platform_device *pdev)
 {
 	printk(KERN_INFO "inside %s function \n", __FUNCTION__);
-	struct device *dev = &pdev->dev;	
+	//struct device *dev = &pdev->dev;
 	return 0;
 }
 
