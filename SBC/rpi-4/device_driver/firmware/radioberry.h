@@ -30,19 +30,6 @@
 
 #define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
 
-void printIntroScreen() {
-	fprintf(stderr,"\n");
-	fprintf(stderr,	"====================================================================\n");
-	fprintf(stderr,	"====================================================================\n");
-	fprintf(stderr, "\t\t\tRadioberry V2.0\n\n\n");
-	fprintf(stderr,	"\tSupports 4 receivers and 1 transmitter.\n\n");
-	fprintf(stderr, "\tBuild version: %s\n\n", FIRMWAREVERSION);
-	fprintf(stderr, "\tHave fun Johan PA3GSB\n\n");
-	fprintf(stderr, "\tReport requests or bugs to <pa3gsb@gmail.com>.\n");
-	fprintf(stderr, "====================================================================\n");
-	fprintf(stderr, "====================================================================\n");
-}
-
 int sys_temp = 0; //rpi-temperature.
 
 int pa_temp = 0;
@@ -75,7 +62,12 @@ int closerb = 0;
 
 int rb_sleep = 100;
 
-static int initRadioberry(void);
+struct rb_args {
+    struct in_addr ip4;
+    in_port_t port;
+};
+
+static int initRadioberry(struct rb_args args);
 static void runRadioberry(void);
 static void closeRadioberry(void);
 

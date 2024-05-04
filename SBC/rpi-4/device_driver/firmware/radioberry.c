@@ -62,12 +62,64 @@ For more information, please refer to <http://unlicense.org/>
 #include <sys/socket.h>
 #include <unistd.h>
 
-int main(int argc, char **argv)
-{
+enum {
+    farg_ip4 = 1 << 0,
+    farg_port = 2 << 0,
+};
+
+static int parse_args(int argc, char * argv[], struct rb_args *args) {
+    if (argc <= 1)
+        return 0;
+    int result = 0;
+    char* ipaddr = argv[1];
+    char* colon = strchr(ipaddr, ':');
+    if (colon != NULL) {
+        *colon = 0;
+        int port = atoi(++colon);
+        if (port <= 0 || port > 0xFFFF) {
+            fprintf(stderr, "Invalid port '%s', expected decimal number\n", colon);
+            result = -1;
+        } else
+            result |= farg_port;
+    }
+    if (ipaddr[0] != 0) {
+        if (!inet_aton(ipaddr, &args->ip4)) {
+            fprintf(stderr, "Invalid argument '%s', expected a valid IP address\n", argv[1]);
+            result = -1;
+        } else
+            result |= farg_ip4;
+    }
+    return result;
+}
+
 /*
-	printIntroScreen();
+static void printIntroScreen(struct rb_args args) {
+    fprintf(stderr,"\n");
+    fprintf(stderr, "====================================================================\n");
+    fprintf(stderr, "====================================================================\n");
+    fprintf(stderr, "\t\t\tRadioberry V2.0\n\n\n");
+    fprintf(stderr, "\tSupports 4 receivers and 1 transmitter.\n\n");
+    fprintf(stderr, "\tBinding to %s:%d\n\n", inet_ntoa(args.ip4), args.port);
+    fprintf(stderr, "\tBuild version: %s\n\n", FIRMWAREVERSION);
+    fprintf(stderr, "\tHave fun Johan PA3GSB\n\n");
+    fprintf(stderr, "\tReport requests or bugs to <pa3gsb@gmail.com>.\n");
+    fprintf(stderr, "====================================================================\n");
+    fprintf(stderr, "====================================================================\n");
+}
 */
-	if (initRadioberry() < 0){
+
+int main(int argc, char **argv)
+{	
+    struct rb_args args = {
+        .ip4 = {0},
+        .port = SERVICE_PORT};
+    int fargs = parse_args(argc, argv, &args);
+    if(fargs < 0)
+        return 1;
+/*
+	printIntroScreen(args);
+*/
+	if (initRadioberry(args) < 0){
 		fprintf(stderr,"Radioberry; could not be initialized. \n");
 		exit(-1);
 	}
@@ -81,7 +133,7 @@ static void start_rb_measure_thread(void);
 static void start_rb_register_thread(void);
 static void start_timer_thread(void);
 
-static int initRadioberry(void) {
+static int initRadioberry(struct rb_args args) {
 	sem_init(&mutex, 0, 1);	
 	sem_init(&tx_empty, 0, TX_MAX); 
     sem_init(&tx_full, 0, 0); 
@@ -159,7 +211,7 @@ static int initRadioberry(void) {
 	memset((char *)&myaddr, 0, sizeof(myaddr));
 	myaddr.sin_family = AF_INET;
 	myaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-	myaddr.sin_port = htons(SERVICE_PORT);
+	myaddr.sin_port = htons(args.port);
 
 	if (bind(fd, (struct sockaddr *)&myaddr, sizeof(myaddr)) < 0) {
 		perror("bind failed");
@@ -183,6 +235,9 @@ static int initRadioberry(void) {
 	if (setsockopt(sock_TCP_Server, SOL_SOCKET, SO_PRIORITY, &optval, sizeof(optval))<0) {
         perror("sock_TCP_Server socket: SO_PRIORITY");
     }
+
+    myaddr.sin_addr.s_addr = args.ip4.s_addr;
+    myaddr.sin_port = htons(args.port);
 
 	if (bind(sock_TCP_Server, (struct sockaddr *)&myaddr, sizeof(myaddr)) < 0)
 	{
@@ -262,12 +317,17 @@ static void handlePacket(char* buffer){
 	switch (code)
 	{
 		default:
-			fprintf(stderr, "Received packages not for me! code=%x\n", code);
+/*
+			fprintf(stderr, "Received packages not for me! \n");
+*/
 			break;
 		case 0x0002feef:
 			fprintf(stderr, "Discovery packet received \n");
 			fprintf(stderr,"SDR Program IP-address %s  \n", inet_ntoa(remaddr.sin_addr)); 
 			fprintf(stderr, "Discovery Port %d \n", ntohs(remaddr.sin_port));
+			if (myaddr.sin_addr.s_addr != 0 && remaddr.sin_addr.s_addr != myaddr.sin_addr.s_addr) {
+	            break;
+			}
 			memset(broadcastReply, 0, 60);
 			unsigned char reply[22] = {0xEF, 0xFE, 0x02, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, gateware_major_version, HERMESLITE, 0, 0, 0, 0, 0, 0, 0, 0, NR, 0, gateware_minor_version };
 			memcpy(broadcastReply, reply, 22);
@@ -587,7 +647,7 @@ static void *txWriter(void *arg) {
 			tx_count = 0;
 			gettimeofday(&t21, 0);
 			float elapsed = timedifference_msec(t20, t21);
-			fprintf(stderr, "Code tx write executed in %f milliseconds.\n", elapsed);
+			//fprintf(stderr, "Code tx write executed in %f milliseconds.\n", elapsed);
 			//fprintf(stderr, "tx_iqdata = %02X - %02X - %02X - %02X\n", tx_iqdata[4], tx_iqdata[5], tx_iqdata[6], tx_iqdata[7]);
 			gettimeofday(&t20, 0);
 		}
